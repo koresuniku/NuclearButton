@@ -2,25 +2,19 @@ package com.koresuniku.nuclearbutton
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import com.google.firebase.FirebaseApp
-import io.reactivex.schedulers.Schedulers
-import com.firebase.ui.auth.AuthUI
-import java.util.*
-import java.util.Arrays.asList
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.firebase.ui.auth.IdpResponse
-import android.content.Intent
 import android.util.Log
-
+import android.widget.Button
+import io.reactivex.schedulers.Schedulers
+import com.google.firebase.auth.FirebaseAuth
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.functions.BiFunction
 
 class MainActivity : AppCompatActivity() {
 
-    private val RC_SIGN_IN = 123
-
     private lateinit var theButton: Button
     private lateinit var firebaseHelper: FirebaseHelper
+    private lateinit var githubHelper: GithubHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,39 +22,38 @@ class MainActivity : AppCompatActivity() {
 
         theButton = findViewById(R.id.the_button)
 
-
+        FirebaseAuth.getInstance().signInWithEmailAndPassword("koresuniku@gmail.com", "123rjhFgeP")
         firebaseHelper = FirebaseHelper()
+        githubHelper = GithubHelper()
 
-        firebaseHelper.getLatestFromFirebaseDB().subscribeOn(Schedulers.newThread()).subscribe()
+        Single.zip(
+                firebaseHelper.getLatestFromFirebaseDB()
+                        .subscribeOn(Schedulers.newThread())
+                        .observeOn(AndroidSchedulers.mainThread()),
+                githubHelper.getLastVersionFromGithub()
+                        .subscribeOn(Schedulers.newThread())
+                        .observeOn(AndroidSchedulers.mainThread()),
+                BiFunction { fromFB: String, fromGH: String ->
+                    Log.d("MA", "fromFB: $fromFB, fromGH: $fromGH")
+                    if (compareVersionNames(fromFB, fromGH)) {
+                        Log.d("MA", "Updating FB")
+                        firebaseHelper.updateFirebaselastVersion(fromGH)
+                    } else  Log.d("MA", "no need to update FB")
 
+                }).subscribe()
 
-//        val providers = Arrays.asList(AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build())
-//
-//        startActivityForResult(
-//                AuthUI.getInstance()
-//                        .createSignInIntentBuilder()
-//                        .setAvailableProviders(providers)
-//                        .build(),
-//                RC_SIGN_IN)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == RC_SIGN_IN) {
-            val response = IdpResponse.fromResultIntent(data)
-
-            if (resultCode == RESULT_OK) {
-                // Successfully signed in
-                val user = FirebaseAuth.getInstance().currentUser
-
-
-                // ...
-            } else {
-                // Sign in failed, check response for error code
-                // ...
-                Log.d("MA", "fuckup!" )
-            }
+    private fun compareVersionNames(fromFB: String, fromGH: String): Boolean {
+        val c = fromFB.replace(Regex("[^0-9\\.]+"), "")
+        val l = fromGH.replace(Regex("[^0-9\\.]+"), "")
+        val fbArr = c.split(Regex("\\."))
+        val ghArr = l.split(Regex("\\."))
+        fbArr.zip(ghArr).forEach {
+            Log.d("MA", "first: ${it.first}, second: ${it.second}")
+            if (it.first.toInt() < it.second.toInt()) return true
+            else if (it.first.toInt() > it.second.toInt()) return false
         }
+        return false
     }
 }
