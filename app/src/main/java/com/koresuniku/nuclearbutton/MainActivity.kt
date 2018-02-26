@@ -12,9 +12,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.firebase.ui.auth.IdpResponse
 import android.content.Intent
-
-
-
+import android.util.Log
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,16 +30,18 @@ class MainActivity : AppCompatActivity() {
 
 
         firebaseHelper = FirebaseHelper()
-        //firebaseHelper.getLatestFromFirebaseDB().subscribeOn(Schedulers.newThread()).subscribe()
 
-        val providers = Arrays.asList(AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build())
+        firebaseHelper.getLatestFromFirebaseDB().subscribeOn(Schedulers.newThread()).subscribe()
 
-        startActivityForResult(
-                AuthUI.getInstance()
-                        .createSignInIntentBuilder()
-                        .setAvailableProviders(providers)
-                        .build(),
-                RC_SIGN_IN)
+
+//        val providers = Arrays.asList(AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build())
+//
+//        startActivityForResult(
+//                AuthUI.getInstance()
+//                        .createSignInIntentBuilder()
+//                        .setAvailableProviders(providers)
+//                        .build(),
+//                RC_SIGN_IN)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
@@ -53,10 +53,13 @@ class MainActivity : AppCompatActivity() {
             if (resultCode == RESULT_OK) {
                 // Successfully signed in
                 val user = FirebaseAuth.getInstance().currentUser
+
+
                 // ...
             } else {
                 // Sign in failed, check response for error code
                 // ...
+                Log.d("MA", "fuckup!" )
             }
         }
     }
