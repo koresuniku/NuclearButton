@@ -14,13 +14,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class GithubHelper {
 
-    fun getLastVersionFromGithub(): Single<String> {
+    fun getLastVersionFromGithub(): Single<Release> {
         return Single.create { e ->
 
             val githubApi = Http.retrofit.create(GithubApi::class.java)
 
             githubApi.getRealeaseList().subscribeOn(Schedulers.newThread()).subscribe {
-                e.onSuccess(it[0].tagName)
+                e.onSuccess(it[0])
             }
         }
 

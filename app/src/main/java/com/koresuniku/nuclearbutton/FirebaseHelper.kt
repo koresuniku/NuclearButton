@@ -16,6 +16,7 @@ class FirebaseHelper {
 
     companion object {
         const val LAST_VERSION_UPDATE = "last_version_update"
+        const val SERVER_KEY = "server_key"
     }
 
     fun getLatestFromFirebaseDB(): Single<String> {
@@ -34,7 +35,23 @@ class FirebaseHelper {
         })
     }
 
-    fun updateFirebaselastVersion(newLastVersionFromGH: String) {
+    fun getServerKey(): Single<String> {
+        return Single.create({e ->
+            val database = FirebaseDatabase.getInstance().reference
+
+            database.child(SERVER_KEY).addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onCancelled(p0: DatabaseError?) {}
+
+                override fun onDataChange(snapshot: DataSnapshot?) {
+                    val value = snapshot?.getValue(String::class.java) ?: String()
+                    e.onSuccess(value)
+                    database.child(SERVER_KEY).removeEventListener(this)
+                }
+            })
+        })
+    }
+
+    fun updateFirebaseLastVersion(newLastVersionFromGH: String) {
         val database = FirebaseDatabase.getInstance().reference
         database.child(LAST_VERSION_UPDATE).setValue(newLastVersionFromGH)
     }
